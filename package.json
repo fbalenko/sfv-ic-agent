@@ -4,18 +4,34 @@
   "description": "AI agent that produces IC memos and market maps for AI-native financial infrastructure.",
   "type": "module",
   "scripts": {
-    "agent": "tsx src/agent.ts",
-    "dev": "tsx watch src/agent.ts",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "agent": "tsx src/agent.ts",
+    "agent:watch": "tsx watch src/agent.ts",
+    "agent:stream": "tsx src/run-agent-streaming.ts",
     "batch": "tsx src/batch.ts",
     "merge-map": "tsx src/merge-map.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "latest",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "framer-motion": "^11.15.0",
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^9.0.3",
+    "recharts": "^2.15.0",
+    "remark-gfm": "^4.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^4.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.4.0"
   }
