@@ -165,7 +165,7 @@ ${rubric}
         systemPrompt: { type: "preset", preset: "claude_code", append: fullSystemPrompt },
         allowedTools: ["WebSearch", "WebFetch", "Read", "Write", "Edit", "Glob", "Grep"],
         mcpServers: mcp.servers,
-        permissionMode: "acceptEdits",
+        permissionMode: "bypassPermissions",
         settingSources: [],
       },
     });
