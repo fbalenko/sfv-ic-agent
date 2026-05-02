@@ -6,7 +6,9 @@
   "scripts": {
     "agent": "tsx src/agent.ts",
     "dev": "tsx watch src/agent.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "batch": "tsx src/batch.ts",
+    "merge-map": "tsx src/merge-map.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "latest",
