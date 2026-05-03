@@ -34,7 +34,7 @@ export default function MarketMapTable({ rows, active }: Props) {
               <Th>Company</Th>
               <Th>Subsegment</Th>
               <Th>Stage</Th>
-              <Th align="center">AI-core?</Th>
+              <Th align="center">Core</Th>
               <Th align="right">Score</Th>
               <Th>One-line take</Th>
             </tr>

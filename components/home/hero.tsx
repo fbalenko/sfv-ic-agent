@@ -3,7 +3,7 @@ export default function Hero() {
     <section className="relative overflow-hidden border-b border-white/10">
       <div className="mx-auto max-w-[1400px] px-6 pb-16 pt-16 md:px-10 md:pb-24 md:pt-24">
         <div className="fade-up grid grid-cols-1 items-end gap-10 md:grid-cols-12">
-          <div className="md:col-span-9">
+          <div className="md:col-span-7">
             <span className="label text-[11px] text-text-muted">
               SFV Thesis · AI-native financial infrastructure
             </span>
@@ -13,7 +13,7 @@ export default function Hero() {
               <span className="text-accent">agent-native.</span>
             </h1>
           </div>
-          <div className="md:col-span-3">
+          <div className="md:col-span-5">
             <p className="text-[15px] leading-[1.6] text-text-muted md:text-[16px]">
               An operator-led thesis on the companies rebuilding back-office and
               middle-office finance with LLMs at the core — scored, sourced, and
