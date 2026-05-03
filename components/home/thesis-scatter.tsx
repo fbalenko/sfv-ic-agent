@@ -21,7 +21,23 @@ const RECOMMENDATION_FILL: Record<string, string> = {
   "TERM SHEET": "var(--color-accent)",
   WATCH: "var(--color-warn)",
   PASS: "var(--color-text-muted)",
-  UNKNOWN: "var(--color-text-muted)",
+};
+
+function fillForRecommendation(rec: string, company: string): string {
+  const fill = RECOMMENDATION_FILL[rec];
+  if (!fill) {
+    console.warn(
+      `[thesis-scatter] unrecognized recommendation "${rec}" for ${company} — defaulting to PURSUE color`,
+    );
+    return "var(--color-accent)";
+  }
+  return fill;
+}
+
+// abbreviate long company names for the chart only — full name still shown
+// in the tooltip and on the underlying data row
+const CHART_LABEL_OVERRIDES: Record<string, string> = {
+  "Bretton AI (fka Greenlite)": "Bretton AI",
 };
 
 interface Props {
@@ -29,29 +45,41 @@ interface Props {
   active: SubsegmentKey | null;
 }
 
+type DotPayload = ScoredCompany & {
+  jx: number;
+  jy: number;
+  labelSide: "left" | "right";
+  labelDy: number;
+  labelText: string;
+};
+
 interface DotProps {
   cx?: number;
   cy?: number;
-  payload?: ScoredCompany & { jx: number; jy: number };
+  payload?: DotPayload;
   active: SubsegmentKey | null;
   router: ReturnType<typeof useRouter>;
 }
 
 function ScatterDot({ cx, cy, payload, active, router }: DotProps) {
   if (cx == null || cy == null || !payload) return null;
-  const fill = RECOMMENDATION_FILL[payload.recommendation] ?? "var(--color-text-muted)";
+  const fill = fillForRecommendation(payload.recommendation, payload.company);
   const dim = active && payload.subsegment !== active;
-  const radius = 8 + (payload.score - 18) * 0.9; // bubble size by score
+  const radius = Math.max(8 + (payload.score - 18) * 0.9, 6);
   const opacity = dim ? 0.18 : 0.92;
   const onClick = () => {
     if (payload.slug) router.push(`/memo/${payload.slug}`);
   };
+  const labelOnLeft = payload.labelSide === "left";
+  const labelX = labelOnLeft ? cx - radius - 22 : cx + radius + 12;
+  const labelY = cy + 4 + payload.labelDy;
+  const labelColor = payload.isStarred ? "var(--color-text)" : "var(--color-text-muted)";
   return (
     <g style={{ cursor: payload.slug ? "pointer" : "default" }} onClick={onClick}>
       <circle
         cx={cx}
         cy={cy}
-        r={Math.max(radius, 6)}
+        r={radius}
         fill={fill}
         opacity={opacity}
         stroke={fill}
@@ -60,16 +88,17 @@ function ScatterDot({ cx, cy, payload, active, router }: DotProps) {
         style={{ transition: "transform 150ms ease-out, opacity 150ms ease-out", transformOrigin: `${cx}px ${cy}px` }}
       />
       <text
-        x={cx + radius + 6}
-        y={cy + 4}
-        fill="currentColor"
-        opacity={dim ? 0.3 : 0.9}
-        className="label"
+        x={labelX}
+        y={labelY}
+        textAnchor={labelOnLeft ? "end" : "start"}
+        fill={labelColor}
+        opacity={dim ? 0.4 : 1}
+        fontFamily="var(--font-mono)"
         fontSize={10}
-        letterSpacing={0.6}
+        letterSpacing={0.4}
         style={{ pointerEvents: "none" }}
       >
-        {payload.company}
+        {payload.labelText}
       </text>
     </g>
   );
@@ -77,9 +106,9 @@ function ScatterDot({ cx, cy, payload, active, router }: DotProps) {
 
 export default function ThesisScatter({ rows, active }: Props) {
   const router = useRouter();
-  // jitter overlapping points slightly so labels don't stack
+  // jitter overlapping points slightly so they don't stack
   const seen: Record<string, number> = {};
-  const data = rows.map((r) => {
+  const jittered = rows.map((r) => {
     const key = `${r.aiCentrality}-${r.workflowDepth}`;
     seen[key] = (seen[key] || 0) + 1;
     const offset = (seen[key] - 1) * 0.18;
@@ -90,6 +119,47 @@ export default function ThesisScatter({ rows, active }: Props) {
     };
   });
 
+  // anchor labels on the side away from the nearest edge:
+  // centrality <= 3 → label sits to the right of the bubble
+  // centrality  > 3 → label sits to the left of the bubble (text-anchor: end)
+  const X_MID = 3;
+
+  // per-side label collision handling: group bubbles whose jy values are close
+  // (within PROXIMITY_JY) and fan their labels out symmetrically in 14px steps
+  // so consecutive labels in a tight cluster don't visually merge
+  const STAGGER_PX = 14;
+  const PROXIMITY_JY = 0.5;
+  const stagger = new Map<string, number>();
+  const assignFanOut = (cluster: typeof jittered) => {
+    const sorted = cluster
+      .slice()
+      .sort((a, b) => b.jy - a.jy || a.company.localeCompare(b.company));
+    const groups: (typeof sorted)[] = [];
+    for (const b of sorted) {
+      const last = groups[groups.length - 1];
+      if (last && Math.abs(last[last.length - 1].jy - b.jy) < PROXIMITY_JY) {
+        last.push(b);
+      } else {
+        groups.push([b]);
+      }
+    }
+    for (const group of groups) {
+      const N = group.length;
+      group.forEach((r, i) => {
+        stagger.set(r.company, (i - (N - 1) / 2) * STAGGER_PX);
+      });
+    }
+  };
+  assignFanOut(jittered.filter((r) => r.jx <= X_MID));
+  assignFanOut(jittered.filter((r) => r.jx > X_MID));
+
+  const data: DotPayload[] = jittered.map((r) => ({
+    ...r,
+    labelSide: r.jx > X_MID ? "left" : "right",
+    labelDy: stagger.get(r.company) ?? 0,
+    labelText: CHART_LABEL_OVERRIDES[r.company] ?? r.company,
+  }));
+
   return (
     <div className="border border-white/10 bg-bg-elevated/50">
       <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
@@ -98,9 +168,9 @@ export default function ThesisScatter({ rows, active }: Props) {
           AI centrality × Workflow depth · bubble = total score
         </span>
       </div>
-      <div className="h-[480px] w-full px-3 py-3 text-text-muted">
+      <div className="h-[660px] w-full px-3 py-3 text-text-muted">
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 24, right: 80, bottom: 36, left: 40 }}>
+          <ScatterChart margin={{ top: 24, right: 40, bottom: 44, left: 48 }}>
             <CartesianGrid stroke="rgba(122,147,184,0.18)" strokeDasharray="2 4" />
             <ReferenceArea
               x1={3.5}
@@ -198,7 +268,7 @@ export default function ThesisScatter({ rows, active }: Props) {
       <div className="flex flex-wrap items-center gap-5 border-t border-white/10 px-6 py-3">
         <Legend color="var(--color-accent)" label="Pursue" />
         <Legend color="var(--color-warn)" label="Watch" />
-        <Legend color="var(--color-text-muted)" label="Pass / Unknown" />
+        <Legend color="var(--color-text-muted)" label="Pass" />
         <span className="ml-auto label text-[10px] text-text-muted">
           Top-right · build conviction
         </span>
