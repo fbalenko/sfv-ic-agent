@@ -8,13 +8,17 @@ export default function Footer() {
         </div>
         <div className="flex items-center gap-6">
           <a
-            href="#"
+            href="https://github.com/fbalenko/sfv-ic-agent"
+            target="_blank"
+            rel="noopener noreferrer"
             className="label text-[11px] text-text-muted transition-colors hover:text-text"
           >
             GitHub
           </a>
           <a
-            href="#"
+            href="https://www.linkedin.com/in/filipbalenko/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="label text-[11px] text-text-muted transition-colors hover:text-text"
           >
             LinkedIn
